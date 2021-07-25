@@ -12,3 +12,10 @@ curl -i \
 -H "Content-Type:application/json" \
 -X POST http://localhost:8080/v1/libraryEventSynchronous
 
+POST WITH NULL LIBRARY EVENT ID WITH SEND AND PRODUCER RECORD
+
+curl -i \
+-d '{"libraryEventId":null,"book":{"bookId":123,"bookName":"Kafka Using Spring Boot Synchronous","bookAuthor":"Lax"}}' \
+-H "Content-Type:application/json" \
+-X POST http://localhost:8080/v1/libraryEventSend
+

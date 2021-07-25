@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learnkafka.domain.LibraryEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -18,6 +19,8 @@ import java.util.concurrent.ExecutionException;
 public class LibraryEventProducer {
     @Autowired
     KafkaTemplate<Integer, String> kafkaTemplate;
+
+    String topic = "library-events";
 
     @Autowired
     ObjectMapper objectMapper;
@@ -38,6 +41,29 @@ public class LibraryEventProducer {
             }
         });
     }
+
+    public void sendLibraryEventWithSend(LibraryEvent libraryEvent) throws JsonProcessingException {
+        Integer key = libraryEvent.getLibraryEventId();
+        String value = objectMapper.writeValueAsString(libraryEvent);
+        ProducerRecord<Integer, String> producerRecord = buidProducerRecord(key, value, topic);
+        ListenableFuture<SendResult<Integer, String>> listenableFuture = kafkaTemplate.send(producerRecord);
+        listenableFuture.addCallback(new ListenableFutureCallback<SendResult<Integer, String>>() {
+            @Override
+            public void onFailure(Throwable ex) {
+                handleFailure(key, value, ex);
+            }
+
+            @Override
+            public void onSuccess(SendResult<Integer, String> result) {
+                handleSuccess(key, value, result);
+            }
+        });
+    }
+
+    private ProducerRecord<Integer, String> buidProducerRecord(Integer key, String value, String topic) {
+        return new ProducerRecord<>(topic, null, key, value, null);
+    }
+
 
     public SendResult<Integer, String> sendLibraryEventSynchronous(LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException {
         Integer key = libraryEvent.getLibraryEventId();
