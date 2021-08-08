@@ -41,9 +41,9 @@ public class LibraryEventsControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Map<String, Object> configs = new HashMap<>(KafkaTestUtils.consumerProps("group1", "true", embeddedKafkaBroker));
-        consumer = new DefaultKafkaConsumerFactory<>(configs, new IntegerDeserializer(), new StringSerializer()).createConsumer();
-        embeddedKafkaBroker.consumeFromAllEmbeddedTopics(consumer);
+//        Map<String, Object> configs = new HashMap<>(KafkaTestUtils.consumerProps("group1", "true", embeddedKafkaBroker));
+//        consumer = new DefaultKafkaConsumerFactory<>(configs, new IntegerDeserializer(), new StringSerializer()).createConsumer();
+//        embeddedKafkaBroker.consumeFromAllEmbeddedTopics(consumer);
     }
 
     @AfterEach
