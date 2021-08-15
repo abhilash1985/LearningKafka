@@ -27,3 +27,17 @@ curl -i \
 -H "Content-Type:application/json" \
 -X POST http://localhost:8080/v1/libraryEventSend
 
+PUT WITH ID
+
+curl -i \
+-d '{"libraryEventId":123,"book":{"bookId":123,"bookName":"Kafka Using Spring Boot","bookAuthor":"Lax"}}' \
+-H "Content-Type:application/json" \
+-X POST http://localhost:8080/v1/libraryEvent
+
+PUT WITHOUT ID
+
+curl -i \
+-d '{"libraryEventId":null,"book":{"bookId":123,"bookName":"Kafka Using Spring Boot","bookAuthor":"Lax"}}' \
+-H "Content-Type:application/json" \
+-X POST http://localhost:8080/v1/libraryEvent
+
