@@ -5,7 +5,7 @@ import com.learnkafka.domain.LibraryEvent;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,13 +37,13 @@ public class LibraryEventsControllerIntegrationTest {
     EmbeddedKafkaBroker embeddedKafkaBroker;
 
     // Integration Testing
-    private Consumer consumer;
+    private Consumer<Integer, String> consumer;
 
     @BeforeEach
     void setUp() {
-//        Map<String, Object> configs = new HashMap<>(KafkaTestUtils.consumerProps("group1", "true", embeddedKafkaBroker));
-//        consumer = new DefaultKafkaConsumerFactory<>(configs, new IntegerDeserializer(), new StringSerializer()).createConsumer();
-//        embeddedKafkaBroker.consumeFromAllEmbeddedTopics(consumer);
+        Map<String, Object> configs = new HashMap<>(KafkaTestUtils.consumerProps("group1", "true", embeddedKafkaBroker));
+        consumer = new DefaultKafkaConsumerFactory<>(configs, new IntegerDeserializer(), new StringDeserializer()).createConsumer();
+        embeddedKafkaBroker.consumeFromAllEmbeddedTopics(consumer);
     }
 
     @AfterEach
@@ -53,34 +53,66 @@ public class LibraryEventsControllerIntegrationTest {
 
     @Test
     @Timeout(5)
-    void  postLibraryEvent(){
-        // given
+    void postLibraryEvent() throws InterruptedException {
+        //given
         Book book = Book.builder()
                 .bookId(123)
                 .bookAuthor("Name")
-                .bookName("Kafka Spring Boot Testing")
+                .bookName("Kafka using Spring Boot")
                 .build();
 
         LibraryEvent libraryEvent = LibraryEvent.builder()
                 .libraryEventId(null)
                 .book(book)
                 .build();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("content-type", MediaType.APPLICATION_JSON.toString());
+        HttpEntity<LibraryEvent> request = new HttpEntity<>(libraryEvent, headers);
 
+        //when
+        ResponseEntity<LibraryEvent> responseEntity = restTemplate.exchange("/v1/libraryevent", HttpMethod.POST, request, LibraryEvent.class);
+
+        //then
+        assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
+
+        ConsumerRecord<Integer, String> consumerRecord = KafkaTestUtils.getSingleRecord(consumer, "library-events");
+        //Thread.sleep(3000);
+        String expectedRecord = "{\"libraryEventId\":null,\"libraryEventType\":\"NEW\",\"book\":{\"bookId\":123,\"bookName\":\"Kafka using Spring Boot\",\"bookAuthor\":\"Name\"}}";
+        String value = consumerRecord.value();
+        assertEquals(expectedRecord, value);
+
+    }
+
+    @Test
+    @Timeout(5)
+    void putLibraryEvent() throws InterruptedException {
+        //given
+        Book book = Book.builder()
+                .bookId(456)
+                .bookAuthor("Dilip")
+                .bookName("Kafka using Spring Boot")
+                .build();
+
+        LibraryEvent libraryEvent = LibraryEvent.builder()
+                .libraryEventId(123)
+                .book(book)
+                .build();
         HttpHeaders headers = new HttpHeaders();
 //        headers.setContentType(MediaType.valueOf(MediaType.APPLICATION_JSON.toString()));
         headers.set("content-type", MediaType.APPLICATION_JSON.toString());
         HttpEntity<LibraryEvent> request = new HttpEntity<>(libraryEvent, headers);
 
-        // when
-        ResponseEntity<LibraryEvent> responseEntity = restTemplate.exchange("/v1/postLibraryEvent", HttpMethod.POST, request, LibraryEvent.class);
+        //when
+        ResponseEntity<LibraryEvent> responseEntity = restTemplate.exchange("/v1/libraryevent", HttpMethod.PUT, request, LibraryEvent.class);
 
-        // then
-        assertEquals(HttpStatus.CREATED, responseEntity);
+        //then
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
         ConsumerRecord<Integer, String> consumerRecord = KafkaTestUtils.getSingleRecord(consumer, "library-events");
-//        Thread.sleep();
-        String expectedRecord = "{\"libraryEventId\":null,\"book\":{\"bookId\":123,\"bookName\":\"Kafka Spring Boot Testing\",\"bookAuthor\":\"Name\"}}";
+        //Thread.sleep(3000);
+        String expectedRecord = "{\"libraryEventId\":123,\"libraryEventType\":\"UPDATE\",\"book\":{\"bookId\":456,\"bookName\":\"Kafka using Spring Boot\",\"bookAuthor\":\"Name\"}}";
         String value = consumerRecord.value();
         assertEquals(expectedRecord, value);
+
     }
 }

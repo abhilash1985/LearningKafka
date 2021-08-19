@@ -16,10 +16,13 @@ import org.springframework.util.concurrent.ListenableFutureCallback;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Component
 @Slf4j
 public class LibraryEventProducer {
+
     @Autowired
     KafkaTemplate<Integer, String> kafkaTemplate;
 
@@ -29,6 +32,7 @@ public class LibraryEventProducer {
     ObjectMapper objectMapper;
 
     public void sendLibraryEvent(LibraryEvent libraryEvent) throws JsonProcessingException {
+
         Integer key = libraryEvent.getLibraryEventId();
         String value = objectMapper.writeValueAsString(libraryEvent);
         ListenableFuture<SendResult<Integer, String>> listenableFuture = kafkaTemplate.sendDefault(key, value);
@@ -48,7 +52,7 @@ public class LibraryEventProducer {
     public ListenableFuture<SendResult<Integer, String>> sendLibraryEventWithSend(LibraryEvent libraryEvent) throws JsonProcessingException {
         Integer key = libraryEvent.getLibraryEventId();
         String value = objectMapper.writeValueAsString(libraryEvent);
-        ProducerRecord<Integer, String> producerRecord = buidProducerRecord(key, value, topic);
+        ProducerRecord<Integer, String> producerRecord = buildProducerRecord(key, value, topic);
         ListenableFuture<SendResult<Integer, String>> listenableFuture = kafkaTemplate.send(producerRecord);
         listenableFuture.addCallback(new ListenableFutureCallback<SendResult<Integer, String>>() {
             @Override
@@ -61,16 +65,17 @@ public class LibraryEventProducer {
                 handleSuccess(key, value, result);
             }
         });
+
         return listenableFuture;
     }
 
-    private ProducerRecord<Integer, String> buidProducerRecord(Integer key, String value, String topic) {
+    private ProducerRecord<Integer, String> buildProducerRecord(Integer key, String value, String topic) {
         List<Header> recordHeaders = List.of(new RecordHeader("event-source", "scanner".getBytes()));
         return new ProducerRecord<>(topic, null, key, value, recordHeaders);
     }
 
 
-    public SendResult<Integer, String> sendLibraryEventSynchronous(LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException {
+    public SendResult<Integer, String> sendLibraryEventSynchronous(LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
         Integer key = libraryEvent.getLibraryEventId();
         String value = objectMapper.writeValueAsString(libraryEvent);
         SendResult<Integer, String> sendResult = null;

@@ -15,10 +15,13 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 @Slf4j
 public class LibraryEventControllerAdvice {
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleRequestBody(MethodArgumentNotValidException ex) {
+
         List<FieldError> errorList = ex.getBindingResult().getFieldErrors();
-        String errorMessage = errorList.stream().map(fieldError -> fieldError.getField() + " - " + fieldError.getDefaultMessage())
+        String errorMessage = errorList.stream()
+                .map(fieldError -> fieldError.getField() + " - " + fieldError.getDefaultMessage())
                 .sorted()
                 .collect(Collectors.joining(", "));
         log.info("Error Message: {}", errorMessage);
